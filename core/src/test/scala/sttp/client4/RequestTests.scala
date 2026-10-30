@@ -7,6 +7,34 @@ import sttp.model.Encodings
 
 class RequestTests extends AnyFlatSpec with Matchers {
 
+  "route template attribute" should "be absent by default" in {
+    basicRequest.attribute(RouteTemplateAttribute) shouldBe None
+  }
+
+  it should "be set and read without changing the request URI" in {
+    val tokenUrl = uri"https://example.com/realms/example/token"
+    val request = basicRequest.post(tokenUrl)
+    val withTemplate = request.attribute(RouteTemplateAttribute, "/realms/{realm}/token")
+
+    withTemplate.attribute(RouteTemplateAttribute) shouldBe Some("/realms/{realm}/token")
+    withTemplate.uri shouldBe tokenUrl
+    request.attribute(RouteTemplateAttribute) shouldBe None
+  }
+
+  it should "preserve the template when completing and copying a request" in {
+    val request = basicRequest
+      .attribute(RouteTemplateAttribute, "/users/{id}")
+      .get(uri"https://example.com/users/123")
+      .header("X-Test", "test")
+      .response(asStringAlways)
+
+    request.attribute(RouteTemplateAttribute) shouldBe Some("/users/{id}")
+    request.attribute(RouteTemplateAttribute, "/users/{userId}").attribute(RouteTemplateAttribute) shouldBe Some(
+      "/users/{userId}"
+    )
+    request.attribute(RouteTemplateAttribute) shouldBe Some("/users/{id}")
+  }
+
   "content length" should "be automatically set for a string body" in {
     basicRequest
       .body("test")

@@ -29,6 +29,21 @@ Query parameters are specified as part of the URI, to which the request should b
 
 The URI can be created programmatically (by calling methods on the `Uri` class), or using the `uri` interpolator, which also allows embedding (and later escaping) values from the environment. See the documentation on [creating URIs](../model/uri.md) for more details.
 
+## Route template attribute
+
+The `core` module exposes `RouteTemplateAttribute`, an `sttp.attributes.AttributeKey[String]`, through `sttp.client4.*`. Use it to attach a URI template to a request for logging, metrics, or tracing without adding an observability dependency:
+
+```scala mdoc
+val tokenUrl = uri"https://example.com/realms/example/token"
+val tokenRequest = basicRequest
+  .post(tokenUrl)
+  .attribute(RouteTemplateAttribute, "/realms/{realm}/token")
+
+val routeTemplate: Option[String] = tokenRequest.attribute(RouteTemplateAttribute)
+```
+
+The key uses the STTP-owned name `sttp.client4.route-template` so that request producers and consumers can share it independently of any observability library. Import the public key when setting or reading the attribute. It is absent by default and does not change the request URI or send an HTTP header. Backends and wrappers must explicitly read the attribute to use it; setting it alone does not configure logging, metrics, or tracing.
+
 ## Sending a request
 
 A request definition can be created without knowing how it will be sent. But to send a request, a backend is needed. A default, synchronous backend based on Java's `HttpClient` is provided in the `core` jar.
