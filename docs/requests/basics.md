@@ -34,17 +34,17 @@ The URI can be created programmatically (by calling methods on the `Uri` class),
 The `core` module exposes `RouteTemplateAttribute`, an `sttp.attributes.AttributeKey[String]`, through `sttp.client4.*`. Use it to attach a URI template to a request for logging, metrics, or tracing without adding an observability dependency:
 
 ```scala mdoc
-val tokenUrl = uri"https://example.com/realms/example/token"
-val tokenRequest = basicRequest
-  .post(tokenUrl)
-  .attribute(RouteTemplateAttribute, "/realms/{realm}/token")
+val userUrl = uri"https://example.com/users/123"
+val userRequest = basicRequest
+  .get(userUrl)
+  .attribute(RouteTemplateAttribute, "/users/{id}")
 
-val routeTemplate: Option[String] = tokenRequest.attribute(RouteTemplateAttribute)
+val routeTemplate: Option[String] = userRequest.attribute(RouteTemplateAttribute)
 ```
 
 The key uses the STTP-owned name `sttp.client4.route-template` so that request producers and consumers can share it independently of any observability library. Import the public key when setting or reading the attribute. It is absent by default and does not change the request URI or send an HTTP header. Backends and wrappers must explicitly read the attribute to use it; setting it alone does not configure logging, metrics, or tracing.
 
-The value is an opaque string: sttp does not validate or expand the template. Use a low-cardinality value, such as `/realms/{realm}/token`, rather than a concrete URL containing identifiers. Like other request attributes, it is preserved when following redirects, even when the destination URI changes. Consumers must decide whether the original template still describes the redirected request before using it.
+The value is an opaque string: sttp does not validate or expand the template. Use a low-cardinality value, such as `/users/{id}`, keeping the placeholder literal so that requests for different users share the same template. Like other request attributes, it is preserved when following redirects, even when the destination URI changes. Consumers must decide whether the original template still describes the redirected request before using it.
 
 ## Sending a request
 
