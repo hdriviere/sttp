@@ -44,6 +44,8 @@ val routeTemplate: Option[String] = tokenRequest.attribute(RouteTemplateAttribut
 
 The key uses the STTP-owned name `sttp.client4.route-template` so that request producers and consumers can share it independently of any observability library. Import the public key when setting or reading the attribute. It is absent by default and does not change the request URI or send an HTTP header. Backends and wrappers must explicitly read the attribute to use it; setting it alone does not configure logging, metrics, or tracing.
 
+The value is an opaque string: sttp does not validate or expand the template. Use a low-cardinality value, such as `/realms/{realm}/token`, rather than a concrete URL containing identifiers. Like other request attributes, it is preserved when following redirects, even when the destination URI changes. Consumers must decide whether the original template still describes the redirected request before using it.
+
 ## Sending a request
 
 A request definition can be created without knowing how it will be sent. But to send a request, a backend is needed. A default, synchronous backend based on Java's `HttpClient` is provided in the `core` jar.

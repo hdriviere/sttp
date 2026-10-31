@@ -53,6 +53,29 @@ class FollowRedirectsBackendTest extends AnyFunSuite with Matchers with EitherVa
     result.body.value shouldBe "All good!"
   }
 
+  test("should preserve the route template attribute when redirecting to a different URI") {
+    val originalUri = uri"https://example.com/users/123"
+    val redirectedUri = uri"https://elsewhere.com/profile"
+    val template = "/users/{id}"
+    val seen = scala.collection.mutable.ArrayBuffer[(Uri, Option[String])]()
+    val stub = BackendStub.synchronous.whenRequestMatchesPartial {
+      case request if request.uri == originalUri =>
+        seen += ((request.uri, request.attribute(RouteTemplateAttribute)))
+        ResponseStub.adjust("", StatusCode.Found, Vector(Header.location(redirectedUri)))
+      case request if request.uri == redirectedUri =>
+        seen += ((request.uri, request.attribute(RouteTemplateAttribute)))
+        ResponseStub.adjust("done")
+    }
+
+    val result = basicRequest
+      .get(originalUri)
+      .attribute(RouteTemplateAttribute, template)
+      .send(FollowRedirectsBackend(stub))
+
+    result.body.value shouldBe "done"
+    seen.toList shouldBe List((originalUri, Some(template)), (redirectedUri, Some(template)))
+  }
+
   private def cookiesIn(r: GenericRequest[?, ?]): Set[String] =
     r.header(HeaderNames.Cookie).map(_.split("; ").toSet).getOrElse(Set.empty)
 
